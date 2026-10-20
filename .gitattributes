@@ -1,0 +1,22 @@
+* text=auto
+
+# Unity YAML assets: merge as text
+*.unity text merge=unityyamlmerge eol=lf
+*.prefab text merge=unityyamlmerge eol=lf
+*.asset text merge=unityyamlmerge eol=lf
+*.mat text eol=lf
+*.meta text eol=lf
+*.cs text diff=csharp
+
+# Binary art/audio. Consider enabling Git LFS for these once real assets arrive:
+#   git lfs install && git lfs track "*.fbx" "*.png" "*.psd" "*.wav" ...
+*.fbx binary
+*.blend binary
+*.png binary
+*.jpg binary
+*.psd binary
+*.tga binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.ttf binary

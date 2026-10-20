@@ -1,0 +1,42 @@
+# ---- Unity (client-unity/) ----
+client-unity/[Ll]ibrary/
+client-unity/[Tt]emp/
+client-unity/[Oo]bj/
+client-unity/[Bb]uild/
+client-unity/[Bb]uilds/
+client-unity/[Ll]ogs/
+client-unity/[Uu]ser[Ss]ettings/
+client-unity/[Mm]emoryCaptures/
+client-unity/[Rr]ecordings/
+client-unity/*.csproj
+client-unity/*.sln
+client-unity/*.slnx
+client-unity/.vs/
+client-unity/.idea/
+client-unity/.vscode/
+client-unity/Assets/Plugins/Editor/JetBrains*
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+crashlytics-buildid.txt
+*.apk
+*.aab
+*.unitypackage
+
+# ---- .NET (server/, client-unity/DotNetTests/) ----
+bin/
+obj/
+*.user
+TestResults/
+
+# ---- OS / editors ----
+.DS_Store
+Thumbs.db
+.idea/
+.vs/
+
+# ---- Secrets: never commit ----
+.env
+*.env.local
+appsettings.*.local.json

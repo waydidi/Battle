@@ -1,0 +1,19 @@
+{
+    "name": "KingdomsEightBanners.Editor",
+    "rootNamespace": "KingdomsEightBanners.EditorTools",
+    "references": [
+        "KingdomsEightBanners.Core",
+        "KingdomsEightBanners.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

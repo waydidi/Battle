@@ -1,0 +1,287 @@
+using KingdomsEightBanners.Character;
+using KingdomsEightBanners.Combat;
+using KingdomsEightBanners.Core;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace KingdomsEightBanners.UI
+{
+    /// <summary>
+    /// Builds the prototype HUD in code so no prefab setup is needed:
+    ///   top-left   : portrait, "Storm  Lv.68", red HP, blue SP, yellow EXP, violet Job EXP
+    ///   bottom-mid : skill bar (Attack, Desert Slash, Dodge) with cooldown overlays
+    ///   bottom-left: chat panel placeholder (real chat arrives with multiplayer)
+    /// Later, artists can replace this with a designed prefab that uses the same data.
+    /// </summary>
+    public sealed class PlayerHud : MonoBehaviour
+    {
+        [SerializeField] private PlayerCharacter player;
+
+        private static readonly Color HpColor = new Color(0.85f, 0.16f, 0.16f);
+        private static readonly Color SpColor = new Color(0.20f, 0.45f, 0.95f);
+        private static readonly Color ExpColor = new Color(0.95f, 0.80f, 0.20f);
+        private static readonly Color JobExpColor = new Color(0.62f, 0.35f, 0.90f);
+        private static readonly Color PanelColor = new Color(0.05f, 0.05f, 0.08f, 0.65f);
+
+        private Font _font;
+        private Text _nameLabel;
+        private Bar _hp, _sp, _exp, _jobExp;
+        private SlotView _attackSlot, _skillSlot, _dodgeSlot;
+        private Text _message;
+        private PlayerCombat _combat;
+        private ThirdPersonController _movement;
+
+        private sealed class Bar
+        {
+            public RectTransform Fill;
+            public Text Label;
+
+            public void Set(float fraction, string text)
+            {
+                Fill.anchorMax = new Vector2(Mathf.Clamp01(fraction), 1f);
+                Label.text = text;
+            }
+        }
+
+        private sealed class SlotView
+        {
+            public Image CooldownOverlay;
+            public Text Timer;
+
+            public void Set(float remainingFraction, double remainingSeconds)
+            {
+                CooldownOverlay.fillAmount = remainingFraction;
+                Timer.text = remainingSeconds > 0.05 ? remainingSeconds.ToString("0.0") : "";
+            }
+        }
+
+        public void SetPlayer(PlayerCharacter target)
+        {
+            player = target;
+        }
+
+        private void Start()
+        {
+            if (player == null) player = FindAnyObjectByType<PlayerCharacter>();
+            if (player == null)
+            {
+                Debug.LogWarning("PlayerHud: no PlayerCharacter found in the scene.");
+                enabled = false;
+                return;
+            }
+
+            _combat = player.GetComponent<PlayerCombat>();
+            _movement = player.GetComponent<ThirdPersonController>();
+            _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            BuildCanvas();
+        }
+
+        private void Update()
+        {
+            var sheet = player.Sheet;
+            var vitals = sheet.Vitals;
+            _nameLabel.text = sheet.Name + "   Lv." + sheet.Level;
+            _hp.Set(vitals.HpFraction, "HP " + Mathf.CeilToInt(vitals.Hp) + " / " + vitals.MaxHp);
+            _sp.Set(vitals.SpFraction, "SP " + Mathf.FloorToInt(vitals.Sp) + " / " + vitals.MaxSp);
+            _exp.Set(sheet.CharacterLevel.Fraction, "EXP " + (sheet.CharacterLevel.Fraction * 100f).ToString("0.0") + "%");
+            _jobExp.Set(sheet.JobLevel.Fraction,
+                "Job Lv." + sheet.JobLevel.Level + "  " + (sheet.JobLevel.Fraction * 100f).ToString("0.0") + "%");
+
+            double now = Time.timeAsDouble;
+            if (_combat != null)
+            {
+                UpdateSlot(_attackSlot, _combat.BasicAttack.Cooldown, now);
+                if (_combat.Skills[0] != null) UpdateSlot(_skillSlot, _combat.Skills[0].Cooldown, now);
+                bool showMessage = Time.time - _combat.LastMessageTime < 1.5f;
+                _message.text = showMessage ? _combat.LastMessage : "";
+            }
+
+            if (_movement != null) UpdateSlot(_dodgeSlot, _movement.DodgeCooldown, now);
+        }
+
+        private static void UpdateSlot(SlotView view, Cooldown cooldown, double now)
+        {
+            view.Set(cooldown.RemainingFraction(now), cooldown.Remaining(now));
+        }
+
+        // ------------------------------------------------------------------ building
+
+        private void BuildCanvas()
+        {
+            var canvasGo = new GameObject("HUD Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            canvasGo.transform.SetParent(transform, false);
+            var canvas = canvasGo.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var scaler = canvasGo.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+            var root = (RectTransform)canvasGo.transform;
+
+            BuildCharacterPanel(root);
+            BuildSkillBar(root);
+            BuildChatPlaceholder(root);
+
+            _message = CreateText(root, "Message", 26, TextAnchor.MiddleCenter);
+            Place(_message.rectTransform, new Vector2(0.5f, 0f), new Vector2(-400f, 190f), new Vector2(800f, 40f));
+        }
+
+        private void BuildCharacterPanel(RectTransform root)
+        {
+            var panel = CreateImage(root, "Character Panel", PanelColor);
+            Place(panel.rectTransform, new Vector2(0f, 1f), new Vector2(24f, -24f), new Vector2(460f, 150f));
+
+            var portrait = CreateImage(panel.rectTransform, "Portrait", new Color(0.55f, 0.42f, 0.25f));
+            Place(portrait.rectTransform, new Vector2(0f, 1f), new Vector2(10f, -10f), new Vector2(110f, 130f));
+            var initial = CreateText(portrait.rectTransform, "Initial", 64, TextAnchor.MiddleCenter);
+            Stretch(initial.rectTransform);
+            initial.text = "S";
+
+            _nameLabel = CreateText(panel.rectTransform, "Name", 26, TextAnchor.MiddleLeft);
+            Place(_nameLabel.rectTransform, new Vector2(0f, 1f), new Vector2(132f, -8f), new Vector2(320f, 32f));
+
+            _hp = CreateBar(panel.rectTransform, "HP", HpColor, -44f, 24f);
+            _sp = CreateBar(panel.rectTransform, "SP", SpColor, -72f, 24f);
+            _exp = CreateBar(panel.rectTransform, "EXP", ExpColor, -100f, 18f);
+            _jobExp = CreateBar(panel.rectTransform, "Job EXP", JobExpColor, -122f, 18f);
+        }
+
+        private Bar CreateBar(RectTransform parent, string name, Color color, float y, float height)
+        {
+            var background = CreateImage(parent, name + " Bar", new Color(0f, 0f, 0f, 0.6f));
+            Place(background.rectTransform, new Vector2(0f, 1f), new Vector2(132f, y), new Vector2(316f, height));
+
+            var fill = CreateImage(background.rectTransform, "Fill", color);
+            var fillRect = fill.rectTransform;
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = fillRect.offsetMax = Vector2.zero;
+
+            var label = CreateText(background.rectTransform, "Label", Mathf.RoundToInt(height * 0.7f), TextAnchor.MiddleCenter);
+            Stretch(label.rectTransform);
+            return new Bar { Fill = fillRect, Label = label };
+        }
+
+        private void BuildSkillBar(RectTransform root)
+        {
+            var bar = CreateImage(root, "Skill Bar", PanelColor);
+            Place(bar.rectTransform, new Vector2(0.5f, 0f), new Vector2(-150f, 24f + 90f), new Vector2(300f, 90f));
+            _attackSlot = CreateSlot(bar.rectTransform, 0, "LMB", "Attack");
+            _skillSlot = CreateSlot(bar.rectTransform, 1, "1", "Desert\nSlash");
+            _dodgeSlot = CreateSlot(bar.rectTransform, 2, "Ctrl/Q", "Dodge");
+        }
+
+        private SlotView CreateSlot(RectTransform parent, int index, string key, string title)
+        {
+            var slot = CreateImage(parent, title + " Slot", new Color(0.30f, 0.24f, 0.16f, 0.95f));
+            Place(slot.rectTransform, new Vector2(0f, 1f), new Vector2(15f + index * 95f, -10f), new Vector2(80f, 70f));
+
+            var name = CreateText(slot.rectTransform, "Title", 15, TextAnchor.MiddleCenter);
+            Stretch(name.rectTransform);
+            name.text = title;
+
+            var overlay = CreateImage(slot.rectTransform, "Cooldown", new Color(0f, 0f, 0f, 0.7f));
+            Stretch(overlay.rectTransform);
+            // Filled images only draw partially when they have a sprite, so give it a plain white one.
+            overlay.sprite = WhiteSprite();
+            overlay.type = Image.Type.Filled;
+            overlay.fillMethod = Image.FillMethod.Radial360;
+            overlay.fillOrigin = (int)Image.Origin360.Top;
+            overlay.fillClockwise = false;
+            overlay.fillAmount = 0f;
+
+            var timer = CreateText(slot.rectTransform, "Timer", 24, TextAnchor.MiddleCenter);
+            Stretch(timer.rectTransform);
+
+            var keyLabel = CreateText(slot.rectTransform, "Key", 13, TextAnchor.UpperLeft);
+            Place(keyLabel.rectTransform, new Vector2(0f, 1f), new Vector2(4f, -2f), new Vector2(70f, 18f));
+            keyLabel.text = key;
+
+            return new SlotView { CooldownOverlay = overlay, Timer = timer };
+        }
+
+        private void BuildChatPlaceholder(RectTransform root)
+        {
+            var chat = CreateImage(root, "Chat Panel", PanelColor);
+            Place(chat.rectTransform, new Vector2(0f, 0f), new Vector2(24f, 24f + 220f), new Vector2(480f, 220f));
+
+            var tabs = CreateText(chat.rectTransform, "Tabs", 18, TextAnchor.UpperLeft);
+            Place(tabs.rectTransform, new Vector2(0f, 1f), new Vector2(10f, -6f), new Vector2(460f, 26f));
+            tabs.text = "[World]  Party   Clan   System";
+
+            var log = CreateText(chat.rectTransform, "Log", 17, TextAnchor.UpperLeft);
+            Place(log.rectTransform, new Vector2(0f, 1f), new Vector2(10f, -36f), new Vector2(460f, 140f));
+            log.text = "<color=#f2c94c>[System]</color> Welcome to Sunspire, Storm.\n" +
+                       "<color=#f2c94c>[System]</color> WASD move, Shift sprint, Space jump, Ctrl/Q dodge.\n" +
+                       "<color=#f2c94c>[System]</color> Left mouse attack, 1 Desert Slash, Esc frees cursor.\n" +
+                       "<color=#9b9b9b>Online chat arrives in Phase 3.</color>";
+            log.supportRichText = true;
+
+            var input = CreateImage(chat.rectTransform, "Input", new Color(0f, 0f, 0f, 0.5f));
+            Place(input.rectTransform, new Vector2(0f, 0f), new Vector2(8f, 8f + 30f), new Vector2(464f, 30f));
+            var hint = CreateText(input.rectTransform, "Hint", 16, TextAnchor.MiddleLeft);
+            Stretch(hint.rectTransform, 8f);
+            hint.text = "Press Enter to chat (offline)";
+            hint.color = new Color(1f, 1f, 1f, 0.45f);
+        }
+
+        // ------------------------------------------------------------------ helpers
+
+        private Sprite _whiteSprite;
+
+        private Sprite WhiteSprite()
+        {
+            if (_whiteSprite == null)
+            {
+                var texture = Texture2D.whiteTexture;
+                _whiteSprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+            }
+
+            return _whiteSprite;
+        }
+
+        private Image CreateImage(RectTransform parent, string name, Color color)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            var image = go.GetComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+            return image;
+        }
+
+        private Text CreateText(RectTransform parent, string name, int size, TextAnchor anchor)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Text));
+            go.transform.SetParent(parent, false);
+            var text = go.GetComponent<Text>();
+            text.font = _font;
+            text.fontSize = size;
+            text.alignment = anchor;
+            text.color = Color.white;
+            text.raycastTarget = false;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Overflow;
+            var shadow = go.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.8f);
+            return text;
+        }
+
+        /// <summary>Anchors a rect at a corner/edge point; position is the rect's top-left from that anchor.</summary>
+        private static void Place(RectTransform rect, Vector2 anchor, Vector2 position, Vector2 size)
+        {
+            rect.anchorMin = rect.anchorMax = anchor;
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+        }
+
+        private static void Stretch(RectTransform rect, float padding = 0f)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(padding, 0f);
+            rect.offsetMax = new Vector2(-padding, 0f);
+        }
+    }
+}

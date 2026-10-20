@@ -1,0 +1,16 @@
+name: Core rules tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Run engine-free game rule tests
+        run: dotnet test client-unity/DotNetTests/KingdomsCore.Tests.csproj --nologo
