@@ -20,6 +20,26 @@ BOTTOM CENTER/RIGHT : Skills, dodge, potion, attack, quick actions
 - [x] Skill window (`Assets/Scripts/UI/SkillWindow.cs`): tabs, three branches, locks, details, next-level preview, Level Up
 - [ ] Minimap and quest tracker in Unity (both already work in the web prototype)
 
+## Bird's-eye view (default camera of the web prototype)
+
+Reference: top-down MMO layout at a fixed 45° angle, the character small in the centre.
+
+- Camera looks down at Storm (~53° pitch), follows him, and **zooms straight towards / away from him**
+  (mouse wheel, pinch, or the **+ / −** buttons; 7–60 m). **View 45°** (or R) rotates the camera in
+  45° steps, right-drag rotates freely, **↺** resets. **V** switches to the close follow camera.
+- The ground is a **grid of 1 m squares** (drawn in the ground shader, G toggles it). Hovering the
+  mouse highlights the square under it (gold = walkable, red = blocked).
+- **Click to move:** clicking a square walks Storm there along an A* path on the same grid
+  (walls, houses, stalls and palms are blocked squares). Holding the button keeps steering.
+  The destination square stays highlighted in cyan and the route shows on the minimap.
+- Clicking a slime targets it (red ring) and attacks; clicking an NPC walks over and talks.
+- **AUTO** hunts the nearest slime, walking out to the desert if needed, and uses ready skills.
+- HUD layout: portrait + HP/SP/XP top-left, pill menus top-centre (Bag, Party, Quests, Collection,
+  Guide, Settings / Daily Quests, Ranking, Guild, Skills), world-boss panel left, location +
+  channel + day/night clock + minimap + FPS top-right, camera tools beside the minimap, quest
+  tracker right (with "walk to" link), chat bottom-left, six-slot skill bar bottom-centre,
+  HP/SP potions (Q/E), attack button and AUTO bottom-right, name tag above the character.
+
 ## PC controls
 
 | Action | Key |
@@ -39,7 +59,7 @@ BOTTOM CENTER/RIGHT : Skills, dodge, potion, attack, quick actions
 | Chat | Enter (Phase 3) |
 | Free cursor | Esc (click to recapture) |
 | Walk / run toggle | C (web prototype) |
-| Talk to NPC | E (web prototype) |
+| Web prototype (bird's-eye) | click ground = move, click slime = attack, F attack, Space dodge, 1–6 skills, Q/E potions, T talk, R rotate, V camera mode, G grid |
 
 ## Mobile (Phase 9)
 

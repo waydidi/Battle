@@ -136,9 +136,11 @@ python3 web-prototype/build.py          # writes web-prototype/dist/index.html
 ```
 
 Open `web-prototype/dist/index.html` in Chrome, Edge, Firefox or Safari (desktop or phone).
-Desktop: click the view to steer with the mouse; WASD, Shift sprint, C walk, Space jump,
-Q dodge, LMB/J attack, 1 Desert Slash, X sit, Z sleep, E talk, K skills.
-Phone: left thumb moves, right thumb turns the camera, buttons on the right fight.
+It opens in a **bird's-eye view** (like a classic top-down MMO): click a ground square to walk
+there, click a slime to attack, mouse wheel / + − to zoom towards or away from Storm, right-drag
+or **View 45°** to rotate. Keys: WASD move, Shift sprint, Space dodge, F attack, 1–6 skills,
+Q/E potions, X sit, Z sleep, T talk, K skills, V follow camera, G grid. **AUTO** fights for you.
+Phone: tap to walk, pinch to zoom, drag on the left for a joystick.
 Talk to Elder Saffa in the plaza, then defeat 5 slimes outside the South Gate.
 
 ### Rebuild the Storm character (optional)
