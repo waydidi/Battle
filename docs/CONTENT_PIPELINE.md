@@ -38,6 +38,32 @@ one ambient track, SFX.
 **UI:** portrait, HP/SP/EXP/job EXP bars, chat, quest tracker, skill bar, target bars, minimap,
 full map, city inspector, shop rental, build placement, treasury panel.
 
+## Storm, the Warrior (original, generated in Blender)
+
+`art/blender/build_storm_warrior.py` builds Storm entirely from code: stylized body, spiky hair,
+bronze armour with a large left pauldron, red scarf and tattered cape, and a sword with a glowing
+"sunfire" fuller. It also creates the skeleton (Unity-Humanoid-style bone names) and seven
+animations: **Idle, Walk, Run, Attack, Dodge, Sit, Sleep**.
+
+```bash
+./art/blender/build_storm.sh --render   # needs Blender 4.x; --render also refreshes docs/images/storm
+```
+
+Outputs: `client-unity/Assets/Art/Characters/Storm/Storm.fbx` (Unity),
+`web-prototype/assets/Storm.glb` (browser), `art/blender/Storm.blend` (open and edit in Blender),
+`docs/images/storm/*.jpg` (turnaround and pose renders).
+
+![Storm turnaround](images/storm/turnaround_three_quarter.jpg)
+
+It is a **stylized placeholder built from primitives**, good enough to judge scale, silhouette,
+animation timing and camera framing. A production character (sculpted, retopologized,
+hand-painted textures, proper skin weights) replaces it later using the same bone names.
+
+In Unity: re-run **Kingdoms > Build Prototype Desert Town Scene**. When `Storm.fbx` exists it
+replaces the capsule and builds `Storm.controller` (also available as
+**Kingdoms > Create Storm Animator Controller**): a Speed blend tree (Idle 0 → Walk 2.2 → Run 5 m/s),
+`Sitting` / `Sleeping` bools and `Attack` / `Dodge` triggers.
+
 ## Swapping the placeholder player for a real character
 
 The Phase 1 player is a capsule. To use a rigged humanoid:

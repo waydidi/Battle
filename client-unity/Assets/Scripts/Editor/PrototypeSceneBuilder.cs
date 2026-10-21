@@ -53,6 +53,8 @@ namespace KingdomsEightBanners.EditorTools
 
             var hud = new GameObject("HUD").AddComponent<PlayerHud>();
             hud.SetPlayer(playerGo.GetComponent<PlayerCharacter>());
+            var skills = new GameObject("Skill Window").AddComponent<SkillWindow>();
+            skills.SetPlayer(playerGo.GetComponent<PlayerCharacter>());
 
             Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -248,7 +250,31 @@ namespace KingdomsEightBanners.EditorTools
             sword.transform.localRotation = Quaternion.Euler(70f, 0f, 0f);
             sword.transform.localScale = new Vector3(0.08f, 0.08f, 1.1f);
 
+            AttachStormModel(player, body, visor, sword);
             return player;
+        }
+
+        /// <summary>
+        /// If the Blender-made Storm model has been exported into the project, use it instead of the
+        /// capsule placeholder and give it an Animator Controller (idle/walk/run/sit/sleep/attack/dodge).
+        /// </summary>
+        private static void AttachStormModel(GameObject player, params GameObject[] placeholders)
+        {
+            var model = AssetDatabase.LoadAssetAtPath<GameObject>(StormModelPostprocessor.ModelPath);
+            if (model == null) return;
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(model);
+            instance.name = "Storm Model";
+            instance.transform.SetParent(player.transform, false);
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
+
+            var animator = instance.GetComponent<Animator>();
+            if (animator == null) animator = instance.AddComponent<Animator>();
+            animator.applyRootMotion = false;
+            animator.runtimeAnimatorController = StormCharacterSetup.CreateOrUpdateController();
+
+            foreach (var placeholder in placeholders) Object.DestroyImmediate(placeholder);
         }
 
         private static void SetupCamera(GameObject player)

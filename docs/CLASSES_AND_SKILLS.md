@@ -37,8 +37,8 @@ The server must compute these from saved stats + buffs and ignore any client-sen
 | Crit chance | 5 % | LUCK | +30 % (max < 35 %) | 150 |
 | Crit damage | ×1.5 | — | — | — |
 | Skill cooldown reduction | 0 | DEX | 25 % | 200 |
-| Max HP | 100 + 20·level + 12·VIT | | | |
-| Max SP | 50 + 4·level + 2·ELEMENT + SENSE | | | |
+| Max HP | 100 + 40·level + 20·VIT | | | |
+| Max SP | 100 + 10·level + 4·(ELEMENT + SENSE) | | | |
 | Physical attack | 2·STR + ½·DEX + level | | | |
 | Damage taken | raw × 100 / (100 + defense) | | | |
 
@@ -53,7 +53,41 @@ Tests in `client-unity/Assets/Tests/EditMode/` verify every cap at max stats.
 - Skill trees = class base skills + city-of-origin lineage skills + stat-based modifiers.
 - Normal skills can be respecced for a reasonable Gold fee with a cooldown.
 
-## Warrior birthplace skills (10 each)
+Storm (Lv.68, STR 95 / AGI 80 / VIT 85 / LUCK 30 / ELEMENT 60 / SENSE 65 / DEX 60) therefore
+has **4,520 HP and 1,280 SP**, matching the UI mockup.
+
+> **Naming rule:** "SP" always means the blue stamina/skill bar. Points spent in skill trees are
+> called **Skill Points** and are never abbreviated to SP.
+
+## Warrior - Sunspire City skill tree (Desert Vanguard) — implemented
+
+Three branches of five skills, taken from the UI mockup. Data: `Core/SkillTrees.cs`;
+rules: `Core/SkillTree.cs` (`SkillTreeState.TryLevelUp`, `ResetAll` for respec).
+Cost per level: top tier 1, middle 2, bottom 3 Skill Points.
+
+| Branch | Skill | Max | Req. char Lv | Prerequisite | Storm (test) |
+|---|---|---|---|---|---|
+| Sand Blade | Desert Slash | 5 | 1 | — | 3 |
+| | Sand Step | 3 | 20 | Desert Slash 1 | 1 |
+| | Whirlwind Cut | 5 | 25 | Desert Slash 2 | 2 |
+| | Sandstorm Aura | 3 | 45 | Sand Step 3 | locked |
+| | Mirage Strike | 5 | 50 | Whirlwind Cut 3 | locked |
+| Caravan Guard | Guard Stance | 5 | 1 | — | 3 |
+| | Shield Bash | 3 | 20 | Guard Stance 1 | 1 |
+| | Caravan Bulwark (passive) | 5 | 70 | Guard Stance 3 | locked (Lv.70) |
+| | Desert Charge | 5 | 40 | Shield Bash 1 | 2 |
+| | Phalanx Wall | 3 | 70 | Caravan Bulwark 1 | locked |
+| Sunfire Combat Arts | Sunfire Strike | 5 | 10 | — | 4 |
+| | Spear Throw | 3 | 30 | Sunfire Strike 2 | 1 |
+| | Sunfire Cleave | 5 | 35 | Sunfire Strike 3 | 2 |
+| | Solar Ascension | 3 | 60 | Spear Throw 3 | locked |
+| | Blazing Domain (ultimate) | 5 | 70 | Sunfire Cleave 3 | locked |
+
+Storm starts with 3 unspent Skill Points and gains 1 per character level.
+Each skill lists numeric effects as `base + perLevel × level` so the UI can preview the next
+level (e.g. Sunfire Cleave damage +18% → +26%, Burn 2 s → 3 s).
+
+## Original birthplace skill lists (10 each, design reference)
 
 **Sunspire / Desert Vanguard:** Desert Slash, Sand Step, Whirlwind Cut, Guard Stance,
 Shield Bash, Desert Charge, Sunfire Strike, Sunfire Cleave, Sandstorm Aura, Blazing Domain.

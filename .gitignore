@@ -40,3 +40,6 @@ Thumbs.db
 .env
 *.env.local
 appsettings.*.local.json
+
+# ---- Web prototype build output (regenerate with: python3 web-prototype/build.py) ----
+web-prototype/dist/

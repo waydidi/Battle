@@ -58,7 +58,7 @@ namespace KingdomsEightBanners.Combat
 
         private void Update()
         {
-            if (_movement.IsDodging) return;
+            if (_movement.IsDodging || _movement.Rest != RestState.None) return;
 
             if (_input.AttackPressed) TryUse(BasicAttack);
             for (int i = 0; i < Skills.Length; i++)
@@ -83,6 +83,7 @@ namespace KingdomsEightBanners.Combat
             // Action-combat convention: attacks go where the camera looks.
             if (cameraTransform != null) _movement.FaceDirection(cameraTransform.forward);
             _movement.LockMovement(slot.Skill.CastTime + slot.Skill.RecoveryTime);
+            _movement.PlayAttackAnimation();
             ResolveHits(slot);
         }
 

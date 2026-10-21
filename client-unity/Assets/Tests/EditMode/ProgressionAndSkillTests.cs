@@ -73,7 +73,11 @@ namespace KingdomsEightBanners.Tests
             Assert.AreEqual(68, storm.Level);
             Assert.AreEqual("warrior", storm.ClassId);
             Assert.AreEqual(storm.Vitals.MaxHp, storm.Vitals.Hp, 1e-4f);
-            Assert.That(storm.CharacterLevel.Fraction, Is.InRange(0.41f, 0.43f));
+            Assert.AreEqual(4520, storm.Vitals.MaxHp);
+            Assert.AreEqual(1280, storm.Vitals.MaxSp);
+            Assert.AreEqual(22, storm.JobLevel.Level);
+            Assert.That(storm.CharacterLevel.Fraction, Is.InRange(0.353f, 0.355f));
+            Assert.That(storm.JobLevel.Fraction, Is.InRange(0.620f, 0.622f));
         }
 
         [Test]

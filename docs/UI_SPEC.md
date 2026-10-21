@@ -16,7 +16,9 @@ BOTTOM CENTER/RIGHT : Skills, dodge, potion, attack, quick actions
 - [x] Bottom-center skill bar: Attack, Desert Slash, Dodge with radial cooldown + timer
 - [x] Bottom-left chat panel placeholder with tabs and system messages
 - [x] Feedback line ("Not enough SP for Desert Slash")
-- [ ] Minimap, quest tracker, top-right menu buttons (Phase 2)
+- [x] Top-right menu buttons (Shop, Event, **Skill**, Clan, Menu); Skill opens the skill window
+- [x] Skill window (`Assets/Scripts/UI/SkillWindow.cs`): tabs, three branches, locks, details, next-level preview, Level Up
+- [ ] Minimap and quest tracker in Unity (both already work in the web prototype)
 
 ## PC controls
 
@@ -31,9 +33,13 @@ BOTTOM CENTER/RIGHT : Skills, dodge, potion, attack, quick actions
 | Light attack | Left mouse |
 | Skills | 1–6 |
 | Map | M (Phase 2) |
-| Skill panel | K (Phase 6) |
+| Skill panel | K |
+| Sit / stand | X (HP/SP regenerate 2× faster) |
+| Sleep / wake | Z (HP/SP regenerate 3× faster) |
 | Chat | Enter (Phase 3) |
 | Free cursor | Esc (click to recapture) |
+| Walk / run toggle | C (web prototype) |
+| Talk to NPC | E (web prototype) |
 
 ## Mobile (Phase 9)
 

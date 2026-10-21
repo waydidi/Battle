@@ -49,11 +49,12 @@ namespace KingdomsEightBanners.Core
         /// <summary>The Level 68 male Warrior "Storm" used for prototype testing.</summary>
         public static CharacterSheet CreateStormTestCharacter()
         {
-            var stats = new CharacterStats(str: 90, agi: 75, vit: 70, luck: 30, element: 40, sense: 45, dex: 60);
+            // Tuned so the HUD matches the UI mockup: HP 4,520, SP 1,280, EXP 35.4%, Job Lv.22 62.1%.
+            var stats = new CharacterStats(str: 95, agi: 80, vit: 85, luck: 30, element: 60, sense: 65, dex: 60);
             var characterLevel = new ExperienceTrack(ExpCurves.Character, ExpCurves.MaxCharacterLevel, 68);
-            characterLevel.Add(characterLevel.RequiredForNextLevel * 42 / 100);
-            var jobLevel = new ExperienceTrack(ExpCurves.Job, ExpCurves.MaxJobLevel, 41);
-            jobLevel.Add(jobLevel.RequiredForNextLevel * 67 / 100);
+            characterLevel.Add(characterLevel.RequiredForNextLevel * 354 / 1000);
+            var jobLevel = new ExperienceTrack(ExpCurves.Job, ExpCurves.MaxJobLevel, 22);
+            jobLevel.Add(jobLevel.RequiredForNextLevel * 621 / 1000);
             return new CharacterSheet("Storm", "warrior", "sunspire", stats, characterLevel, jobLevel);
         }
     }

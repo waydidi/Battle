@@ -98,12 +98,12 @@ namespace KingdomsEightBanners.Core
 
         public static int MaxHp(CharacterStats stats, int level)
         {
-            return 100 + Math.Max(level, 1) * 20 + stats.Vit * 12;
+            return 100 + Math.Max(level, 1) * 40 + stats.Vit * 20;
         }
 
         public static int MaxSp(CharacterStats stats, int level)
         {
-            return 50 + Math.Max(level, 1) * 4 + stats.Element * 2 + stats.Sense;
+            return 100 + Math.Max(level, 1) * 10 + (stats.Element + stats.Sense) * 4;
         }
 
         public static float PhysicalAttack(CharacterStats stats, int level)

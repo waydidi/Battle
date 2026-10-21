@@ -4,9 +4,16 @@ using UnityEngine;
 
 namespace KingdomsEightBanners.Character
 {
+    public enum RestState
+    {
+        None,
+        Sitting,
+        Sleeping,
+    }
+
     /// <summary>
     /// Camera-relative third-person movement: run, sprint (drains SP), jump, directional dodge
-    /// (SP cost + cooldown) and smooth 360-degree rotation. Uses Unity's CharacterController so
+    /// (SP cost + cooldown), sitting and sleeping, and smooth 360-degree rotation. Uses Unity's CharacterController so
     /// the player collides with walls, climbs steps and respects slope limits.
     /// All speeds come from StatFormulas, never from hand-typed values on the client.
     /// </summary>
@@ -18,7 +25,7 @@ namespace KingdomsEightBanners.Character
         [Header("References")]
         [Tooltip("Camera used to make WASD camera-relative. Defaults to Camera.main.")]
         [SerializeField] private Transform cameraTransform;
-        [Tooltip("Optional. Parameters used if present: Speed (float), Grounded (bool), Jump, Dodge (triggers).")]
+        [Tooltip("Optional. Parameters used if present: Speed (float), Grounded, Sitting, Sleeping (bools), Jump, Dodge, Attack (triggers).")]
         [SerializeField] private Animator animator;
 
         [Header("Feel")]
@@ -36,6 +43,9 @@ namespace KingdomsEightBanners.Character
         private static readonly int GroundedHash = Animator.StringToHash("Grounded");
         private static readonly int JumpHash = Animator.StringToHash("Jump");
         private static readonly int DodgeHash = Animator.StringToHash("Dodge");
+        private static readonly int AttackHash = Animator.StringToHash("Attack");
+        private static readonly int SittingHash = Animator.StringToHash("Sitting");
+        private static readonly int SleepingHash = Animator.StringToHash("Sleeping");
 
         private CharacterController _controller;
         private PlayerInputReader _input;
@@ -53,11 +63,24 @@ namespace KingdomsEightBanners.Character
         public Cooldown DodgeCooldown { get; } = new Cooldown();
         public bool IsDodging { get; private set; }
         public bool IsSprinting { get; private set; }
+        public RestState Rest { get; private set; }
         public bool IsGrounded => _controller.isGrounded;
         public float HorizontalSpeed => _horizontalVelocity.magnitude;
 
         public bool IsInvulnerable =>
             IsDodging && Time.time - _dodgeStartTime < StatFormulas.DodgeDuration * dodgeInvulnerableFraction;
+
+        /// <summary>Gets up from sitting or sleeping.</summary>
+        public void StandUp()
+        {
+            Rest = RestState.None;
+        }
+
+        /// <summary>Plays the attack animation (if the model has one).</summary>
+        public void PlayAttackAnimation()
+        {
+            SetTrigger(AttackHash);
+        }
 
         /// <summary>Blocks walking (not falling) for a short time, e.g. during attack recovery.</summary>
         public void LockMovement(float seconds)
@@ -114,6 +137,12 @@ namespace KingdomsEightBanners.Character
             {
                 _horizontalVelocity = Vector3.zero;
                 IsSprinting = false;
+                Rest = RestState.None;
+            }
+            else if (UpdateRest())
+            {
+                _horizontalVelocity = Vector3.zero;
+                IsSprinting = false;
             }
             else if (IsDodging)
             {
@@ -136,6 +165,28 @@ namespace KingdomsEightBanners.Character
             var motion = (_horizontalVelocity + Vector3.up * _verticalVelocity) * Time.deltaTime;
             _controller.Move(motion);
             UpdateAnimator();
+        }
+
+        /// <summary>Handles sit/sleep toggles. Returns true while the character is resting.</summary>
+        private bool UpdateRest()
+        {
+            if (Rest != RestState.None)
+            {
+                // Any action wakes the character up; the action itself starts next frame.
+                if (_input.Move.sqrMagnitude > 0.01f || _input.JumpPressed || _input.DodgePressed || _input.AttackPressed)
+                {
+                    StandUp();
+                    return true;
+                }
+            }
+
+            if (_controller.isGrounded && HorizontalSpeed < 0.5f)
+            {
+                if (_input.SitPressed) Rest = Rest == RestState.Sitting ? RestState.None : RestState.Sitting;
+                if (_input.SleepPressed) Rest = Rest == RestState.Sleeping ? RestState.None : RestState.Sleeping;
+            }
+
+            return Rest != RestState.None;
         }
 
         private void UpdateLocomotion()
@@ -231,6 +282,8 @@ namespace KingdomsEightBanners.Character
             if (animator == null) return;
             if (_animatorParameters.Contains(SpeedHash)) animator.SetFloat(SpeedHash, HorizontalSpeed);
             if (_animatorParameters.Contains(GroundedHash)) animator.SetBool(GroundedHash, _controller.isGrounded);
+            if (_animatorParameters.Contains(SittingHash)) animator.SetBool(SittingHash, Rest == RestState.Sitting);
+            if (_animatorParameters.Contains(SleepingHash)) animator.SetBool(SleepingHash, Rest == RestState.Sleeping);
         }
 
         private void SetTrigger(int hash)

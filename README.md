@@ -5,25 +5,34 @@ real-time combat, player-built cities, rentable shops and a simulated kingdom ec
 PC first, mobile later.
 
 > This is a multi-year vision. The repository is built **one small, tested slice at a time**.
-> Current stage: **Phase 1 — offline character prototype.** Nothing is online yet.
+> Current stage: **Phase 1 — offline character prototype** (+ skill tree and a playable browser
+> build of the slice). Nothing is online yet.
+
+![Storm, the Sunspire Warrior](docs/images/storm/pose_attack.jpg)
 
 ## What works right now
 
 | Feature | Where |
 |---|---|
+| **Storm**, an original 3D Warrior made in Blender (rigged; Idle, Walk, Run, Attack, Dodge, Sit, Sleep) | `art/blender/`, `Assets/Art/Characters/Storm/` |
+| **Browser prototype** you can play on a phone or PC (Storm, Sunspire City, slimes, quest, HUD, minimap, skill tree) | `web-prototype/` |
+| **Skill window**: Warrior - Sunspire City tree, 15 skills in 3 branches, Skill Points, locks, next-level preview | `Assets/Scripts/Core/SkillTree*.cs`, `Assets/Scripts/UI/SkillWindow.cs` |
+| Sit (X) and sleep (Z) with faster HP/SP regeneration | `ThirdPersonController.cs`, `PlayerCharacter.cs` |
 | Third-person over-the-shoulder camera, mouse orbit, zoom, no wall clipping | `Assets/Scripts/Character/ThirdPersonCamera.cs` |
 | WASD camera-relative movement, sprint (drains SP), jump, directional dodge (SP + cooldown + i-frames) | `Assets/Scripts/Character/ThirdPersonController.cs` |
 | Seven stats (STR AGI VIT LUCK ELEMENT SENSE DEX) with capped, diminishing-returns formulas | `Assets/Scripts/Core/` |
 | Separate character EXP and job EXP tracks | `Assets/Scripts/Core/ExperienceTrack.cs` |
 | Light attack (LMB) and **Desert Slash** (key 1) with SP cost, cooldown, crits, damage numbers | `Assets/Scripts/Combat/` |
-| HUD: Storm Lv.68, red HP, blue SP, yellow EXP, violet Job EXP, skill bar, chat placeholder | `Assets/Scripts/UI/PlayerHud.cs` |
+| HUD: Storm Lv.68, red HP, blue SP, yellow EXP, violet Job EXP, menu buttons, skill bar, chat placeholder | `Assets/Scripts/UI/PlayerHud.cs` |
 | One-click greybox scene: Sunspire market square, city wall + south gate, Amber Desert dunes, ruined outpost, test ramps/steps/pillars, training dummies | `Assets/Scripts/Editor/PrototypeSceneBuilder.cs` |
-| 21 unit tests for the game rules, runnable in Unity **and** in plain .NET / GitHub Actions | `Assets/Tests/EditMode/`, `client-unity/DotNetTests/` |
+| 29 unit tests for the game rules, runnable in Unity **and** in plain .NET / GitHub Actions | `Assets/Tests/EditMode/`, `client-unity/DotNetTests/` |
 
 ## Repository layout
 
 ```
 docs/                    design docs (start with GAME_DESIGN.md and DEVELOPMENT_CHECKLIST.md)
+art/blender/             Storm character script (build_storm_warrior.py), build_storm.sh, Storm.blend
+web-prototype/           three.js browser version of the slice (index.src.html + build.py)
 client-unity/            the Unity project
   Assets/Scripts/Core/       engine-free game rules (stats, HP/SP, EXP, skills, damage)
   Assets/Scripts/Character/  input, movement, camera, player data
@@ -93,6 +102,8 @@ cd Battle
 | Dodge | Left Ctrl or Q (+ direction; no direction = backstep) |
 | Attack | Left mouse |
 | Desert Slash | 1 (15 SP, 4 s cooldown) |
+| Skill tree | K (or the Skill button, top right) |
+| Sit / Sleep | X / Z (move to stand up) |
 | Free the mouse | Esc (click the Game view to recapture) |
 
 3. Press ▶ again to stop. *Changes made while playing are lost when you stop* — that is normal.
@@ -118,6 +129,24 @@ asset, Unity uses the built-in renderer and everything still works. To use URP:
 *Edit → Project Settings → Graphics* → set **Default Render Pipeline** to that asset, and re-run
 **Kingdoms → Build Prototype Desert Town Scene** so materials switch to the URP Lit shader.
 
+### Play the browser prototype (no Unity needed)
+
+```bash
+python3 web-prototype/build.py          # writes web-prototype/dist/index.html
+```
+
+Open `web-prototype/dist/index.html` in Chrome, Edge, Firefox or Safari (desktop or phone).
+Desktop: click the view to steer with the mouse; WASD, Shift sprint, C walk, Space jump,
+Q dodge, LMB/J attack, 1 Desert Slash, X sit, Z sleep, E talk, K skills.
+Phone: left thumb moves, right thumb turns the camera, buttons on the right fight.
+Talk to Elder Saffa in the plaza, then defeat 5 slimes outside the South Gate.
+
+### Rebuild the Storm character (optional)
+
+Install Blender 4.x, then run `./art/blender/build_storm.sh --render`. It regenerates the
+Unity FBX, the web GLB, the editable `.blend` and the preview renders. See
+[docs/CONTENT_PIPELINE.md](docs/CONTENT_PIPELINE.md).
+
 ## Ground rules
 
 - **The server decides, the client displays.** Gold, inventory, damage and movement speed are
@@ -130,7 +159,8 @@ asset, Unity uses the built-in renderer and everything still works. To use URP:
 
 ## Next task
 
-Work-session 3 in [docs/DEVELOPMENT_CHECKLIST.md](docs/DEVELOPMENT_CHECKLIST.md): import a
-licensed rigged humanoid with idle/walk/run animations and hook it up as described in
-[docs/CONTENT_PIPELINE.md](docs/CONTENT_PIPELINE.md#swapping-the-placeholder-player-for-a-real-character).
-Then verify the Phase 1 exit test (60 FPS, no clipping, no walking through walls).
+Open the project in Unity, run **Kingdoms > Build Prototype Desert Town Scene** (it now uses
+the Storm model and builds his Animator Controller), press Play and check the Phase 1 exit
+test: 60 FPS, no camera clipping, no walking through walls. Then port the slime, quest and
+minimap from the web prototype into Unity (sessions 9–14 in
+[docs/DEVELOPMENT_CHECKLIST.md](docs/DEVELOPMENT_CHECKLIST.md)).
