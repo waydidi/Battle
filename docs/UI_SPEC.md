@@ -33,12 +33,26 @@ Reference: top-down MMO layout at a fixed 45° angle, the character small in the
   (walls, houses, stalls and palms are blocked squares). Holding the button keeps steering.
   The destination square stays highlighted in cyan and the route shows on the minimap.
 - Clicking a slime targets it (red ring) and attacks; clicking an NPC walks over and talks.
+- **See-through buildings:** any building between the camera and the character turns into a
+  tinted glass prism (its own colour at low opacity) with an outline in a deeper shade of that
+  colour, so the character is never hidden. **See-through** (B) shows every building that way.
 - **AUTO** hunts the nearest slime, walking out to the desert if needed, and uses ready skills.
 - HUD layout: portrait + HP/SP/XP top-left, pill menus top-centre (Bag, Party, Quests, Collection,
   Guide, Settings / Daily Quests, Ranking, Guild, Skills), world-boss panel left, location +
   channel + day/night clock + minimap + FPS top-right, camera tools beside the minimap, quest
   tracker right (with "walk to" link), chat bottom-left, six-slot skill bar bottom-centre,
   HP/SP potions (Q/E), attack button and AUTO bottom-right, name tag above the character.
+
+## Chat channels
+
+| Channel | Who can post |
+|---|---|
+| World | Characters **Lv. 50+** (`ChatRules.WorldChatMinLevel`); lower levels see "World chat unlocks at Lv. 50" and keep their text |
+| Party / Whisper / Guild | Everyone (party, target and guild membership checks arrive with multiplayer) |
+| System | Nobody (read-only) |
+
+The **All** tab posts to World. The chat server enforces these rules; the client only explains them.
+Web prototype test link: add `#lv20` to the URL to start at Lv. 20 and see the lock.
 
 ## PC controls
 

@@ -87,7 +87,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 #camTools .row { display: flex; gap: 8px; }
 .round { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: rgba(10,13,26,.85); cursor: pointer; font-size: 1.2rem; display: grid; place-items: center; }
 .round:hover, .pill.on { border-color: var(--gold); }
-.pill.on { background: rgba(230,182,94,.22); }
+.pill.on { background: linear-gradient(#b8893c, #6e4a17); color: #fff; }
 
 /* ---------- quest panel (right) */
 #quest { position: fixed; right: calc(8px + env(safe-area-inset-right, 0px)); top: calc(328px + env(safe-area-inset-top, 0px)); width: 330px; z-index: 5; }
@@ -303,7 +303,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
     <button class="pill" id="viewBtn" type="button">View 45°</button>
     <button class="round" id="resetBtn" type="button" aria-label="Reset camera">↺</button>
   </div>
-  <button class="pill" id="modeBtn" type="button" title="V">Bird's-eye</button>
+  <div class="row"><button class="pill" id="seeBtn" type="button" title="B">See-through</button><button class="pill" id="modeBtn" type="button" title="V">Bird's-eye</button></div>
 </div>
 
 <section id="quest" class="panel" aria-live="polite">
@@ -340,7 +340,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 <div id="meTag" class="tag"><span>68</span>Storm</div>
 <div id="stick"><i></i></div>
 <div id="toast" role="status"></div>
-<div id="help">Click the ground to walk · hover shows the square · click a slime to attack · wheel or +/− to zoom · right-drag or R to rotate · WASD move · Shift sprint · Space dodge · F attack · 1-6 skills · Q/E potions · X sit · Z sleep · T talk · K skills · V camera mode · G grid</div>
+<div id="help">Click the ground to walk · hover shows the square · click a slime to attack · wheel or +/− to zoom · right-drag or R to rotate · WASD move · Shift sprint · Space dodge · F attack · 1-6 skills · Q/E potions · X sit · Z sleep · T talk · K skills · V camera mode · B see-through · G grid</div>
 
 <section id="skills" hidden aria-label="Skill window">
   <header><h2>Skill</h2><button id="skillClose" type="button" aria-label="Close skill window">✕</button></header>
@@ -570,20 +570,27 @@ const mat = {
 useEnv(mat.gold); useEnv(mat.blueDome);
 const rng = (() => { let s = 20261021; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); })();
 
+// Buildings are groups of meshes (walls, roof, windows, domes) that turn see-through together.
+const buildings = [];
+let currentBuilding = null;
+function beginBuilding() { currentBuilding = { meshes: [], t: 0, target: 0, edges: [], mats: null }; buildings.push(currentBuilding); }
+function endBuilding() { currentBuilding = null; }
+function register(m) { if (currentBuilding) { currentBuilding.meshes.push(m); m.userData.building = currentBuilding; } }
+
 function addBox(x, y, z, w, h, d, material, opts = {}) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
   m.position.set(x, y + h / 2, z);
   m.castShadow = true; m.receiveShadow = true;
-  scene.add(m);
+  scene.add(m); register(m);
   if (opts.solid !== false) colliders.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 });
   if (opts.map) mapRects.push({ x, z, w, d, kind: opts.map });
   return m;
 }
 function addDome(x, y, z, r, material) {
   const m = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), material);
-  m.position.set(x, y, z); m.castShadow = true; scene.add(m);
+  m.position.set(x, y, z); m.castShadow = true; scene.add(m); register(m);
   const spire = new THREE.Mesh(new THREE.ConeGeometry(r * 0.08, r * 0.6, 8), mat.gold);
-  spire.position.set(x, y + r * 1.25, z); scene.add(spire);
+  spire.position.set(x, y + r * 1.25, z); scene.add(spire); register(spire);
 }
 
 // Ground with dunes outside the walls.
@@ -614,9 +621,11 @@ function addDome(x, y, z, r, material) {
   const cross = new THREE.Mesh(new THREE.PlaneGeometry(CITY * 2 - 4, 8), mat.plaza);
   cross.rotation.x = -Math.PI / 2; cross.position.set(0, 0.012, 0); cross.receiveShadow = true; scene.add(cross);
   mapRects.push({ x: 0, z: 0, w: 36, d: 36, kind: "plaza" }, { x: 0, z: CITY / 2 + 6, w: 10, d: CITY + 6, kind: "plaza" }, { x: 0, z: 0, w: CITY * 2 - 4, d: 8, kind: "plaza" });
+  beginBuilding();
   addBox(0, 0, 0, 5, 0.8, 5, mat.stone[0], { map: "fountain" });
   addBox(0, 0.8, 0, 1.2, 2.4, 1.2, mat.stone[2], { solid: false });
   addDome(0, 3.2, 0, 0.9, mat.gold);
+  endBuilding();
   const pool = new THREE.Mesh(new THREE.CircleGeometry(9, 48), mat.water);
   pool.rotation.x = -Math.PI / 2; pool.position.set(-27, 0.06, -24); scene.add(pool);
   const rim = new THREE.Mesh(new THREE.TorusGeometry(9, 0.35, 8, 48), mat.stone[1]);
@@ -683,31 +692,33 @@ for (const l of lamps) {
 const lampLights = [];
 for (let i = 0; i < 6; i++) { const pl = new THREE.PointLight("#ffb062", 0, 14, 2); scene.add(pl); lampLights.push(pl); }
 
-// City walls, gate towers, banners and corner towers.
+// City walls, gate towers, banners and corner towers. Each wall side (with its battlements) is one building.
 {
-  const H = 9, T = 2.4;
-  addBox(0, 0, -CITY, CITY * 2, H, T, mat.stone[1], { map: "wall" });
-  addBox(-CITY, 0, 0, T, H, CITY * 2, mat.stone[1], { map: "wall" });
-  addBox(CITY, 0, 0, T, H, CITY * 2, mat.stone[1], { map: "wall" });
-  const seg = CITY - GATE_W / 2;
-  addBox(-(GATE_W / 2 + seg / 2), 0, CITY, seg, H, T, mat.stone[1], { map: "wall" });
-  addBox(GATE_W / 2 + seg / 2, 0, CITY, seg, H, T, mat.stone[1], { map: "wall" });
-  addBox(0, H - 2.2, CITY, GATE_W, 2.2, T + 0.6, mat.darkStone, { solid: false });
+  const H = 9, T = 2.4, seg = CITY - GATE_W / 2;
+  const battlements = (fn) => { for (let i = -CITY + 2; i < CITY - 1; i += 3) fn(i); };
+  beginBuilding(); addBox(0, 0, -CITY, CITY * 2, H, T, mat.stone[1], { map: "wall" }); battlements((i) => addBox(i, H, -CITY, 1.2, 0.9, T, mat.stone[1], { solid: false })); endBuilding();
+  beginBuilding(); addBox(-CITY, 0, 0, T, H, CITY * 2, mat.stone[1], { map: "wall" }); battlements((i) => addBox(-CITY, H, i, T, 0.9, 1.2, mat.stone[1], { solid: false })); endBuilding();
+  beginBuilding(); addBox(CITY, 0, 0, T, H, CITY * 2, mat.stone[1], { map: "wall" }); battlements((i) => addBox(CITY, H, i, T, 0.9, 1.2, mat.stone[1], { solid: false })); endBuilding();
   for (const sx of [-1, 1]) {
+    beginBuilding();
+    addBox(sx * (GATE_W / 2 + seg / 2), 0, CITY, seg, H, T, mat.stone[1], { map: "wall" });
+    battlements((i) => { if (Math.sign(i) === sx && Math.abs(i) > GATE_W / 2 + 4) addBox(i, H, CITY, 1.2, 0.9, T, mat.stone[1], { solid: false }); });
+    endBuilding();
+  }
+  beginBuilding(); addBox(0, H - 2.2, CITY, GATE_W, 2.2, T + 0.6, mat.darkStone, { solid: false }); endBuilding();
+  for (const sx of [-1, 1]) {
+    beginBuilding();
     addBox(sx * (GATE_W / 2 + 2), 0, CITY, 4, H + 4, 4, mat.stone[2], { map: "tower" });
     addDome(sx * (GATE_W / 2 + 2), H + 4, CITY, 2.1, mat.gold);
+    endBuilding();
     const banner = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 4.2), mat.banner);
     banner.position.set(sx * (GATE_W / 2 + 2), H - 0.5, CITY + 2.05); scene.add(banner);
   }
   for (const [x, z] of [[-CITY, -CITY], [CITY, -CITY], [-CITY, CITY], [CITY, CITY]]) {
+    beginBuilding();
     addBox(x, 0, z, 6, H + 6, 6, mat.stone[2], { map: "tower" });
     addDome(x, H + 6, z, 3, mat.blueDome);
-  }
-  for (let i = -CITY + 2; i < CITY - 1; i += 3) {
-    addBox(i, H, -CITY, 1.2, 0.9, T, mat.stone[1], { solid: false });
-    addBox(-CITY, H, i, T, 0.9, 1.2, mat.stone[1], { solid: false });
-    addBox(CITY, H, i, T, 0.9, 1.2, mat.stone[1], { solid: false });
-    if (Math.abs(i) > GATE_W / 2 + 4) addBox(i, H, CITY, 1.2, 0.9, T, mat.stone[1], { solid: false });
+    endBuilding();
   }
 }
 
@@ -720,6 +731,7 @@ for (let i = 0; i < 6; i++) { const pl = new THREE.PointLight("#ffb062", 0, 14, 
       const w = 6 + rng() * 3.5, d = 6 + rng() * 3.5, h = 4.5 + rng() * 7;
       if (keepClear(x, z, Math.max(w, d) / 2)) continue;
       const m = mat.stone[Math.floor(rng() * 3)];
+      beginBuilding();
       addBox(x, 0, z, w, h, d, m, { map: "house" });
       addBox(x, h, z, w + 0.4, 0.5, d + 0.4, mat.darkStone, { solid: false });
       for (let k = 0; k < 2; k++) {
@@ -733,11 +745,14 @@ for (let i = 0; i < 6; i++) { const pl = new THREE.PointLight("#ffb062", 0, 14, 
       const r = rng();
       if (r < 0.3) addDome(x, h + 0.5, z, Math.min(w, d) * 0.36, r < 0.12 ? mat.gold : mat.blueDome);
       else if (r < 0.45) { addBox(x + w * 0.25, h + 0.5, z - d * 0.25, 1.8, 4, 1.8, m, { solid: false }); addDome(x + w * 0.25, h + 4.5, z - d * 0.25, 1.05, mat.gold); }
+      endBuilding();
     }
   }
+  beginBuilding();
   addBox(0, 0, -38, 22, 12, 10, mat.stone[2], { map: "house" });
   addDome(0, 12, -38, 5, mat.gold);
-  for (const sx of [-1, 1]) { addBox(sx * 12, 0, -38, 3, 20, 3, mat.stone[0], { map: "tower" }); addDome(sx * 12, 20, -38, 1.8, mat.gold); }
+  endBuilding();
+  for (const sx of [-1, 1]) { beginBuilding(); addBox(sx * 12, 0, -38, 3, 20, 3, mat.stone[0], { map: "tower" }); addDome(sx * 12, 20, -38, 1.8, mat.gold); endBuilding(); }
 }
 
 // Five rentable market stalls along the plaza.
@@ -1006,6 +1021,7 @@ window.addEventListener("keydown", (e) => {
   if (k === "c") { player.walkMode = !player.walkMode; toast(player.walkMode ? "Walking" : "Running"); }
   if (k === "t") talk();
   if (k === "m") mapZoom = mapZoom === 1 ? 2.2 : 1;
+  if (k === "b") toggleSeeThrough();
   if (k === "v") setMode(cam.mode === "bird" ? "follow" : "bird");
   if (k === "r") rotateView(1);
   if (k === "g") { gridUniform.value = gridUniform.value > 0 ? 0 : 0.22; toast(gridUniform.value ? "Grid on" : "Grid off"); }
@@ -1106,6 +1122,7 @@ press("zoomOut", () => zoomBy(1.25));
 press("viewBtn", () => rotateView(1));
 press("resetBtn", () => { cam.yawTarget = Math.PI * 0.75; cam.pitch = 0.92; cam.distTarget = 22; setMode("bird"); });
 press("modeBtn", () => setMode(cam.mode === "bird" ? "follow" : "bird"));
+press("seeBtn", () => toggleSeeThrough());
 press("sunBtn", () => { gameMinutes = isNight() ? 8 * 60 : 21 * 60; toast(isNight() ? "Night falls over Sunspire" : "Morning in Sunspire"); });
 press("fullBtn", () => {
   try {
@@ -1170,8 +1187,32 @@ function renderChat() {
   log.scrollTop = log.scrollHeight;
 }
 function chat(ch, who, text) { chatLines.push([ch, who, text, clockText().slice(-5)]); if (chatLines.length > 60) chatLines.shift(); renderChat(); }
-$("chatTabs").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; chatFilter = b.dataset.ch; for (const x of $("chatTabs").children) x.setAttribute("aria-selected", String(x === b)); renderChat(); });
-$("chatForm").addEventListener("submit", (e) => { e.preventDefault(); const v = $("chatInput").value.trim(); if (v) chat("world", "Storm", v); $("chatInput").value = ""; $("chatInput").blur(); });
+// Chat rules (same as Core/ChatRules.cs; the chat server enforces them online): World needs Lv. 50.
+const WORLD_CHAT_MIN_LEVEL = 50;
+const CHANNEL_NAMES = { world: "World", party: "Party", whisper: "Whisper", guild: "Guild" };
+const sendChannel = () => (chatFilter === "all" ? "world" : chatFilter);
+const worldLocked = () => player.level < WORLD_CHAT_MIN_LEVEL;
+function updateChatInput() {
+  const ch = sendChannel(), input = $("chatInput");
+  input.placeholder = ch === "world" && worldLocked()
+    ? "World chat unlocks at Lv. " + WORLD_CHAT_MIN_LEVEL + " (you are Lv. " + player.level + ")"
+    : "Message " + CHANNEL_NAMES[ch] + "... (offline)";
+}
+$("chatTabs").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; chatFilter = b.dataset.ch; for (const x of $("chatTabs").children) x.setAttribute("aria-selected", String(x === b)); renderChat(); updateChatInput(); });
+$("chatForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const v = $("chatInput").value.trim();
+  if (!v) { $("chatInput").blur(); return; }
+  const ch = sendChannel();
+  if (ch === "world" && worldLocked()) {
+    // Keep the typed text so it can be sent to Party, Whisper or Guild instead.
+    chat("system", "", "World chat unlocks at Lv. " + WORLD_CHAT_MIN_LEVEL + ". You are Lv. " + player.level + ". Use Party, Whisper or Guild for now.");
+    toast("World chat unlocks at Lv. " + WORLD_CHAT_MIN_LEVEL);
+    return;
+  }
+  chat(ch, "Storm", v);
+  $("chatInput").value = ""; $("chatInput").blur();
+});
 renderChat();
 $("topMenu").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
@@ -1207,7 +1248,7 @@ function talk(n) {
 renderQuest();
 function grant(exp, jobExp, gold) {
   player.exp += exp; player.jobExp += jobExp; player.gold += gold;
-  while (player.exp >= expChar(player.level) && player.level < 99) { player.exp -= expChar(player.level); player.level++; skillState.points++; refreshMax(); player.hp = player.maxHp; player.sp = player.maxSp; toast("Level up! Lv." + player.level + " (+1 Skill Point)", 2.5); chat("system", "", "Storm reached Lv." + player.level + "."); }
+  while (player.exp >= expChar(player.level) && player.level < 99) { player.exp -= expChar(player.level); player.level++; skillState.points++; refreshMax(); updateChatInput(); player.hp = player.maxHp; player.sp = player.maxSp; toast("Level up! Lv." + player.level + " (+1 Skill Point)", 2.5); chat("system", "", "Storm reached Lv." + player.level + "."); }
   while (player.jobExp >= expJob(player.job) && player.job < 70) { player.jobExp -= expJob(player.job); player.job++; toast("Job Level up! Job Lv." + player.job, 2.5); }
   $("skillBadge").textContent = skillState.points; $("skillBadge").hidden = skillState.points === 0;
 }
@@ -1657,6 +1698,71 @@ function updateOverlays(dt, now) {
   $("sitBtn").classList.toggle("on", player.rest === "sit"); $("sleepBtn").classList.toggle("on", player.rest === "sleep");
   if (toastTimer > 0) { toastTimer -= dt; if (toastTimer <= 0) $("toast").textContent = ""; }
 }
+// ---------- see-through buildings: anything between the camera and Storm becomes a tinted glass prism with
+// a coloured outline, so the player is never hidden. "See-through" (B) shows every building that way.
+const buildingMeshes = buildings.flatMap((b) => b.meshes);
+const occRay = new THREE.Raycaster();
+const WHITE = new THREE.Color("#ffffff");
+let seeThroughAll = false, occTimer = 0;
+function ghostify(b) {
+  if (b.mats) return;
+  const clones = new Map();
+  for (const m of b.meshes) {
+    m.userData.solidMat = m.material;
+    let g = clones.get(m.material);
+    if (!g) {
+      g = m.material.clone();
+      g.transparent = true; g.depthWrite = false;
+      // A little self-glow in the building's own colour keeps the tint readable at low opacity.
+      if (g.emissive && m.material !== mat.window) { g.emissive.copy(m.material.color); g.emissiveIntensity = 0.35; }
+      clones.set(m.material, g);
+    }
+    m.userData.ghostMat = g;
+    // Outline in the building's own colour: a deeper shade for pale sandstone, a brighter one for dark/strong colours.
+    const base = m.material.color, hsl = {}; base.getHSL(hsl);
+    const edgeColor = hsl.l > 0.35 ? base.clone().offsetHSL(0, 0.15, -0.28) : base.clone().lerp(WHITE, 0.35);
+    // Drawn through the glass (no depth test) so the whole prism silhouette reads, back edges included.
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 25),
+      new THREE.LineBasicMaterial({ color: edgeColor, transparent: true, opacity: 0, depthWrite: false, depthTest: false, toneMapped: false }));
+    edges.renderOrder = 4;
+    edges.visible = false; edges.raycast = () => {};
+    m.add(edges); b.edges.push(edges);
+  }
+  b.mats = [...clones.values()];
+}
+function updateGhosts(dt) {
+  occTimer -= dt;
+  if (occTimer <= 0) {
+    occTimer = 0.1;
+    for (const b of buildings) b.target = seeThroughAll ? 1 : 0;
+    if (!seeThroughAll) {
+      // Rays from the camera to Storm's feet, chest, head and both shoulders.
+      const right = camRight();
+      for (const [side, h] of [[0, 0.3], [0, 1.0], [0, 1.9], [0.8, 1.0], [-0.8, 1.0]]) {
+        tmp2.set(player.pos.x + right.x * side, player.pos.y + h, player.pos.z + right.z * side);
+        const dir = tmp2.clone().sub(camera.position), dist = dir.length();
+        occRay.set(camera.position, dir.normalize()); occRay.far = Math.max(0, dist - 0.4);
+        for (const hit of occRay.intersectObjects(buildingMeshes, false)) hit.object.userData.building.target = 1;
+      }
+    }
+  }
+  for (const b of buildings) {
+    if (b.t === b.target) continue;
+    b.t = b.target > b.t ? Math.min(1, b.t + dt * 5) : Math.max(0, b.t - dt * 3);
+    ghostify(b);
+    const ghost = b.t > 0;
+    for (const m of b.meshes) { m.material = ghost ? m.userData.ghostMat : m.userData.solidMat; m.castShadow = !ghost; }
+    for (const g of b.mats) g.opacity = lerp(1, 0.26, b.t);
+    for (const e of b.edges) { e.visible = ghost; e.material.opacity = 0.95 * b.t; }
+  }
+}
+function toggleSeeThrough() {
+  seeThroughAll = !seeThroughAll;
+  $("seeBtn").classList.toggle("on", seeThroughAll);
+  occTimer = 0;
+  toast(seeThroughAll ? "See-through: all buildings shown as glass" : "See-through off: only buildings hiding Storm turn to glass");
+}
+
 function resize() { const w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
 window.addEventListener("resize", resize); resize();
 
@@ -1668,6 +1774,7 @@ function frame() {
   updateSlimes(dt, now);
   if (mixer) mixer.update(dt);
   updateCamera(dt);
+  updateGhosts(dt);
   updateOverlays(dt, now);
   hudTimer -= raw; if (hudTimer <= 0) { hudTimer = 0.05; drawHud(); }
   mapTimer -= raw; if (mapTimer <= 0) { mapTimer = 1 / 20; drawMinimap(); }
@@ -1678,6 +1785,9 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
+// Test link: add #lv20 (any 1-99) to the URL to start at that level, e.g. to see the World chat lock.
+{ const m = /^#lv(\d{1,2})$/.exec(location.hash); if (m && +m[1] >= 1) { player.level = +m[1]; player.exp = 0; refreshMax(); player.hp = player.maxHp; player.sp = player.maxSp; } }
+updateChatInput();
 if (STORM_PORTRAIT.startsWith("data:")) $("portrait").style.backgroundImage = "url(" + STORM_PORTRAIT + ")";
 function start() {
   $("loading").hidden = true;
