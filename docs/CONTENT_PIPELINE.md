@@ -53,7 +53,9 @@ Outputs: `client-unity/Assets/Art/Characters/Storm/Storm.fbx` (Unity),
 `web-prototype/assets/Storm.glb` (browser), `art/blender/Storm.blend` (open and edit in Blender),
 `docs/images/storm/*.jpg` (turnaround and pose renders).
 
-![Storm turnaround](images/storm/turnaround_three_quarter.jpg)
+![Storm turnaround](images/storm/storm_turnaround_preview.jpg)
+
+![Storm animations: walk, run, attack, dodge, sit, sleep](images/storm/storm_animations_preview.jpg)
 
 It is a **stylized placeholder built from primitives**, good enough to judge scale, silhouette,
 animation timing and camera framing. A production character (sculpted, retopologized,
